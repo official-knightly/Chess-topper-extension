@@ -245,28 +245,47 @@
 
   // ─── Board detection (chess.com, lichess, worldchess) ───
   function findBoard() {
-    // Prefer each site's real board element; generic .board matches wrappers and
-    // analysis thumbnails, so only use those as a guarded fallback.
-    const preferred = 'cg-board, wc-chess-board, chess-board, [data-board]';
+    // Some Chess.com and World Chess layouts put the board below shadow roots.
+    // Search those roots too; document.querySelectorAll alone silently misses them.
+    const preferred = 'cg-board, wc-chess-board, chess-board, [data-board], ' +
+      '[data-testid="chessboard"], [data-testid="chess-board"], [data-testid*="board"], ' +
+      '[data-game-board], .chess-board, .chessboard, .board-container, ' +
+      '[class*="board-container"], [class*="chess-board"], world-chess-board, wc-board';
     const fallback = '.main-board .board, .board';
+    const roots = [];
+    const seenRoots = new Set();
+    const collectRoots = root => {
+      if (!root || seenRoots.has(root)) return;
+      seenRoots.add(root);
+      roots.push(root);
+      for (const el of root.querySelectorAll?.('*') || []) {
+        if (el.shadowRoot) collectRoots(el.shadowRoot);
+      }
+    };
+    collectRoots(document);
+    const candidates = new Set();
+    for (const root of roots) {
+      for (const board of root.querySelectorAll(preferred + ', ' + fallback)) candidates.add(board);
+    }
     const rank = board => {
       const rect = board.getBoundingClientRect();
-      const pieces = board.querySelectorAll('piece, .piece, [data-piece]').length;
+      let pieces = board.querySelectorAll('piece, .piece, [data-piece]').length;
+      if (board.shadowRoot) pieces += board.shadowRoot.querySelectorAll('piece, .piece, [data-piece]').length;
       const area = rect.width * rect.height;
       const visible = rect.width >= 160 && rect.height >= 160 &&
         rect.bottom > 0 && rect.right > 0 && rect.top < innerHeight && rect.left < innerWidth;
       const squareLike = rect.width > 0 && rect.height > 0 &&
         Math.abs(rect.width - rect.height) / Math.max(rect.width, rect.height) < 0.18;
-      const siteBoard = board.matches('cg-board, wc-chess-board, chess-board, [data-board]');
+      const siteBoard = board.matches('cg-board, wc-chess-board, chess-board, [data-board], ' +
+        '[data-testid="chessboard"], [data-testid="chess-board"], [data-game-board], world-chess-board, wc-board');
       return { board, rect, pieces, area, visible, squareLike, siteBoard };
     };
-    const all = [...document.querySelectorAll(preferred)].map(rank)
+    const ranked = [...candidates].map(rank)
       .filter(x => x.visible && x.squareLike && x.pieces >= 2)
-      .sort((a,b) => Number(b.siteBoard)-Number(a.siteBoard) || b.area-a.area || b.pieces-a.pieces);
-    if (all.length) return all[0].board;
-    return [...document.querySelectorAll(fallback)].map(rank)
-      .filter(x => x.visible && x.squareLike && x.pieces >= 2)
-      .sort((a,b) => b.area-a.area || b.pieces-a.pieces)[0]?.board || null;
+      .sort((a, b) => Number(b.siteBoard) - Number(a.siteBoard) || b.area - a.area || b.pieces - a.pieces);
+    const preferredBoard = ranked.find(x => x.siteBoard);
+    if (preferredBoard) return preferredBoard.board;
+    return ranked.find(x => x.board.matches(fallback))?.board || ranked[0]?.board || null;
   }
 
   function squareFromTransform(el, board, blackOri) {
