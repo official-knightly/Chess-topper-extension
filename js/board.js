@@ -584,7 +584,32 @@
     const [jsResponse, wasmResponse] = await Promise.all([fetch(jsUrl), fetch(wasmUrl)]);
     if (!jsResponse.ok) throw new Error('Engine JavaScript HTTP ' + jsResponse.status);
     if (!wasmResponse.ok) throw new Error('Engine WASM HTTP ' + wasmResponse.status);
-    const [jsCode, wasmBuffer] = await Promise.all([jsResponse.text(), wasmResponse.arrayBuffer()]);
+    let jsCode = await jsResponse.text();
+    let wasmBuffer = await wasmResponse.arrayBuffer();
+
+    // Engine JavaScript and WASM are tracked with Git LFS. GitHub's source ZIP
+    // contains pointer files rather than the actual binaries, so resolve those
+    // pointers through the matching media endpoint before creating the worker.
+    const isLfsPointer = value => /^version https:\\/\\/git-lfs\\.github\\.com\\/spec\\/v1/m.test(value);
+    const mediaBase = 'https://media.githubusercontent.com/media/official-knightly/Chess-topper-extension/main/';
+    if (isLfsPointer(jsCode)) {
+      const response = await fetch(mediaBase + def.js);
+      if (!response.ok) throw new Error('Engine JavaScript LFS download failed (HTTP ' + response.status + ')');
+      jsCode = await response.text();
+    }
+    if (isLfsPointer(new TextDecoder().decode(wasmBuffer.slice(0, 120)))) {
+      const response = await fetch(mediaBase + def.wasm);
+      if (!response.ok) throw new Error('Engine WASM LFS download failed (HTTP ' + response.status + ')');
+      wasmBuffer = await response.arrayBuffer();
+    }
+    const wasmBytes = new Uint8Array(wasmBuffer);
+    if (isLfsPointer(jsCode) || jsCode.length < 10000) {
+      throw new Error('Engine JavaScript is incomplete; check GitHub LFS availability.');
+    }
+    if (wasmBytes.byteLength < 8 || wasmBytes[0] !== 0 || wasmBytes[1] !== 0x61 ||
+        wasmBytes[2] !== 0x73 || wasmBytes[3] !== 0x6d) {
+      throw new Error('Engine WASM is missing, truncated, or has an invalid WebAssembly header.');
+    }
     const executableCode = def.id === 'dragon'
       ? jsCode.replace(/Module = \{\s*onRuntimeInitialized:/,
           'Module = { wasmBinary: __chessTopperWasm, onRuntimeInitialized:')
