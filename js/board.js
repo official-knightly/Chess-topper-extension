@@ -526,7 +526,7 @@
     if (!Number.isFinite(cp)) return;
     // UCI score is from the side-to-move perspective. The bar is always
     // White's winning chance, so normalize before rendering it.
-    const whiteCp = perspective === 'stm' && state.lastFen.split(/\\s+/)[1] === 'b' ? -cp : cp;
+    const whiteCp = perspective === 'stm' && state.lastFen.split(/\s+/)[1] === 'b' ? -cp : cp;
     state.score = whiteCp;
     const pawns = whiteCp / 100;
     // Common chess-eval bar scaling: clamp extreme scores but retain useful
