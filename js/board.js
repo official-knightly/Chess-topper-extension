@@ -912,7 +912,18 @@ self.addEventListener('message', __chessTopperInit);
     }
   }
 
-  setInterval(scan, 700);
+  // Watch the page shell as well as the current board. Chess sites frequently
+  // replace the board node during SPA navigation, game reloads, and analysis
+  // transitions; a board-only observer cannot see that replacement.
+  let pageMutationObs = null;
+  if (typeof MutationObserver === 'function' && document.documentElement) {
+    pageMutationObs = new MutationObserver(() => scheduleScan(120));
+    pageMutationObs.observe(document.documentElement, { subtree: true, childList: true });
+  }
+
+  // The board observer handles piece/FEN changes immediately. Keep a slower
+  // watchdog as a fallback for sites that update state outside the DOM.
+  setInterval(scan, 1800);
   scheduleScan(0);
   window.addEventListener('resize', () => state.bestmove && drawArrow(state.bestmove));
   window.addEventListener('scroll', () => state.bestmove && drawArrow(state.bestmove), true);
