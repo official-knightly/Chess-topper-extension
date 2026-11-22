@@ -590,7 +590,7 @@
     // Engine JavaScript and WASM are tracked with Git LFS. GitHub's source ZIP
     // contains pointer files rather than the actual binaries, so resolve those
     // pointers through the matching media endpoint before creating the worker.
-    const isLfsPointer = value => /^version https:\\/\\/git-lfs\\.github\\.com\\/spec\\/v1/m.test(value);
+    const isLfsPointer = value => /^version https:\/\/git-lfs\.github\.com\/spec\/v1/m.test(value);
     const mediaBase = 'https://media.githubusercontent.com/media/official-knightly/Chess-topper-extension/main/';
     if (isLfsPointer(jsCode)) {
       const response = await fetch(mediaBase + def.js);
