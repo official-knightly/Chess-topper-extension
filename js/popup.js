@@ -1,6 +1,6 @@
 const statusEl = document.getElementById("status");
-const REPO_URL = "https://github.com/official-knightly/Chess-topper";
-const MANIFEST_URL = "https://raw.githubusercontent.com/official-knightly/Chess-topper/main/manifest.json";
+const REPO_URL = "https://github.com/official-knightly/Chess-topper-extension";
+const MANIFEST_URL = "https://raw.githubusercontent.com/official-knightly/Chess-topper-extension/main/manifest.json";
 const CURRENT_VERSION = "0.6.0";
 
 function setStatus(message) {
