@@ -39,7 +39,7 @@
     const isLfsPointerText = (value) =>
       /^version https:\/\/git-lfs\.github\.com\/spec\/v1/m.test(value);
     const wasmPrefix = () => new TextDecoder().decode(wasmBuffer.slice(0, 120));
-    const mediaBase = 'https://media.githubusercontent.com/media/official-knightly/Chess-topper/main/';
+    const mediaBase = 'https://media.githubusercontent.com/media/official-knightly/Chess-topper-extension/main/';
     if (isLfsPointerText(jsSource)) {
       const response = await fetch(mediaBase + 'engine/stockfish-19.js');
       if (!response.ok) throw new Error(`Stockfish LFS JavaScript download failed (HTTP ${response.status})`);
@@ -149,7 +149,7 @@
     let jsSource = await jsResponse.text();
     let wasmBuffer = await wasmResponse.arrayBuffer();
     const isLfsPointer = value => /^version https:\/\/git-lfs\.github\.com\/spec\/v1/m.test(value);
-    const mediaBase = 'https://media.githubusercontent.com/media/official-knightly/Chess-topper/main/';
+    const mediaBase = 'https://media.githubusercontent.com/media/official-knightly/Chess-topper-extension/main/';
     if (isLfsPointer(jsSource)) {
       const response = await fetch(mediaBase + 'engine/berserk/berserk.js');
       if (!response.ok) throw new Error('Berserk LFS JavaScript download failed (HTTP ' + response.status + ')');
